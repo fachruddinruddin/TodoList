@@ -32,13 +32,66 @@ class _TodoAppState extends State<TodoApp> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _descController = TextEditingController();
+  final dbHelper = DatabaseHelper();
   List<Todo> _todos = [];
+  int _count = 0;
+
+  void refreshItemList() async {
+    final todos = await dbHelper.getAllTodos();
+    setState(() {
+      _todos = todos;
+    });
+  }
+
+  void searchItems() async {
+    final keyword = _searchController.text.trim();
+    if (keyword.isNotEmpty) {
+      final todos = await dbHelper.getTodoByTitle(keyword);
+      setState(() {
+        _todos = todos;
+      });
+    } else {
+      refreshItemList();
+    }
+  }
+
+  void addItem(String title, String desc) async {
+    final todo =
+        Todo(id: _count, title: title, description: desc, completed: false);
+    await dbHelper.insertTodo(todo);
+    refreshItemList();
+  }
+
+  void updateItem(Todo todo, bool completed) async {
+    final item = Todo(
+      id: todo.id,
+      title: todo.title,
+      description: todo.description,
+      completed: completed,
+    );
+    await dbHelper.updateTodo(item);
+    refreshItemList();
+  }
+
+  void deleteItem(int id) async {
+    await dbHelper.deleteTodo(id);
+    refreshItemList();
+  }
+
+  @override
+  void initState() {
+    refreshItemList();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Todo List'),
+        titleTextStyle: const TextStyle(
+            color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold),
+        backgroundColor: Colors.blue,
       ),
       body: Column(
         children: [
@@ -51,7 +104,9 @@ class _TodoAppState extends State<TodoApp> {
                 prefixIcon: Icon(Icons.search),
                 border: OutlineInputBorder(),
               ),
-              onChanged: (_) {},
+              onChanged: (_) {
+                searchItems();
+              },
             ),
           ),
           Expanded(
@@ -63,17 +118,23 @@ class _TodoAppState extends State<TodoApp> {
                   leading: todo.completed
                       ? IconButton(
                           icon: const Icon(Icons.check_circle),
-                          onPressed: () {},
+                          onPressed: () {
+                            updateItem(todo, !todo.completed);
+                          },
                         )
                       : IconButton(
                           icon: const Icon(Icons.radio_button_unchecked),
-                          onPressed: () {},
+                          onPressed: () {
+                            updateItem(todo, !todo.completed);
+                          },
                         ),
                   title: Text(todo.title),
                   subtitle: Text(todo.description),
                   trailing: IconButton(
                     icon: const Icon(Icons.delete),
-                    onPressed: () {},
+                    onPressed: () {
+                      deleteItem(todo.id);
+                    },
                   ),
                 );
               },
@@ -111,7 +172,14 @@ class _TodoAppState extends State<TodoApp> {
                 ),
                 TextButton(
                   child: const Text('Tambah'),
-                  onPressed: () {},
+                  onPressed: () {
+                    addItem(_titleController.text, _descController.text);
+
+                    Navigator.pop(context);
+                    setState(() {
+                      _count = _count + 1;
+                    });
+                  },
                 ),
               ],
             ),
