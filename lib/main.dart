@@ -1,8 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:latihan4_todolist/database_helper.dart';
 import 'package:latihan4_todolist/todo.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
